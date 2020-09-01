@@ -46,13 +46,9 @@ private extension NetworkActivityLogger {
             .printLogsToConsole(true, usingFormat: .shortWith(prefix: "[iOS App] "))
             .build()
         
-        logger.addTag(withKey: "ovoId", value: UserModel().getOvoId())
-        logger.addTag(withKey: "deviceId", value: APIParameterValue.deviceId)
-        #if DEBUG
-        logger.addTag(withKey: "build_configuration", value: "debug")
-        #else
-        logger.addTag(withKey: "build_configuration", value: "release")
-        #endif
+        for (key, value) in additionalInfosForLogger {
+            logger.addTag(withKey: key, value: value)
+        }
         
         return logger
     }

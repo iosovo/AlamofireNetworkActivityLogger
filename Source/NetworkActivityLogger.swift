@@ -54,7 +54,7 @@ public class NetworkActivityLogger {
     // MARK: - Properties
     
     /// The shared network activity logger for the system.
-    public static let shared: NetworkActivityLogger!
+    public static var shared: NetworkActivityLogger!
     
     /// The level of logging detail. See NetworkActivityLoggerLevel enum for possible values. .info by default.
     public var level: NetworkActivityLoggerLevel
@@ -64,13 +64,18 @@ public class NetworkActivityLogger {
     
     private let queue = DispatchQueue(label: "\(NetworkActivityLogger.self) Queue")
     
+    var additionalInfosForLogger: [String: String] = [:]
+    
     // MARK: - Internal - Initialization
     
-    public init(clientToken: String,
-         environment: String,
-         serviceName: String) {
+    public init(
+        clientToken: String,
+        environment: String,
+        serviceName: String,
+        additionalInfosForLogger: [String: String]) {
         level = .info
         
+        self.additionalInfosForLogger = additionalInfosForLogger
         initializeDatadog(clientToken, environment, serviceName)
     }
     
@@ -128,16 +133,16 @@ public class NetworkActivityLogger {
             switch self.level {
             case .debug:
                 
-                log += logDivider()
+                log += self.logDivider()
                 log += "\(httpMethod) '\(requestURL.absoluteString)':"
                 log += "cURL:\n\(dataRequest.cURLDescription())"
                 
-                sentLog(log: log)
+                self.sentLog(log: log)
             case .info:
-                log += logDivider()
+                log += self.logDivider()
                 log += "\(httpMethod) '\(requestURL.absoluteString)'"
                 
-                sentLog(log: log)
+                self.sentLog(log: log)
             default:
                 break
             }
@@ -167,10 +172,10 @@ public class NetworkActivityLogger {
             if let error = task.error {
                 switch self.level {
                 case .debug, .info, .warn, .error:
-                    log += logDivider()
+                    log += self.logDivider()
                     log += "[Error] \(httpMethod) '\(requestURL.absoluteString)' [\(String(format: "%.04f", elapsedTime)) s]:"
                     
-                    sentLog(log: log)
+                    self.sentLog(log: log)
                 default:
                     break
                 }
@@ -181,9 +186,9 @@ public class NetworkActivityLogger {
                 
                 switch self.level {
                 case .debug:
-                    log += logDivider()
+                    log += self.logDivider()
                     log += "\(String(response.statusCode)) '\(requestURL.absoluteString)' [\(String(format: "%.04f", elapsedTime)) s]:"
-                    log += logHeaders(headers: response.allHeaderFields)
+                    log += self.logHeaders(headers: response.allHeaderFields)
                     
                     guard let data = dataRequest.data else { break }
                     
@@ -197,19 +202,19 @@ public class NetworkActivityLogger {
                             log += prettyString
                         }
                         
-                        sentLog(log: log)
+                        self.sentLog(log: log)
                     } catch {
                         if let string = NSString(data: data, encoding: String.Encoding.utf8.rawValue) {
-                            log += string
+                            log += string as String
                         }
                         
-                        sentLog(log: log)
+                        self.sentLog(log: log)
                     }
                 case .info:
-                    log += logDivider()
+                    log += self.logDivider()
                     log += "\(String(response.statusCode)) '\(requestURL.absoluteString)' [\(String(format: "%.04f", elapsedTime)) s]"
                     
-                    sentLog(log: log)
+                    self.sentLog(log: log)
                 default:
                     break
                 }
@@ -241,7 +246,7 @@ private extension NetworkActivityLogger {
         dPrint(log)
         
         //send to datadog
-        sendDatadogLogger(log)
+        sendDatadogLogger(log: log)
     }
     
     func dPrint(_ items: Any..., separator: String = " ", terminator: String = "\n") {
