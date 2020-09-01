@@ -17,4 +17,5 @@ Pod::Spec.new do |s|
   s.watchos.deployment_target = '3.0'
 
   s.dependency 'Alamofire', '~> 5.2.1'
+  s.dependency 'DatadogSDK', '>= 1.3.1'
 end

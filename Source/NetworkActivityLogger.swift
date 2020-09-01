@@ -25,6 +25,7 @@
 //  SOFTWARE.
 
 import Alamofire
+import Datadog
 import Foundation
 
 /// The level of logging detail.
@@ -53,7 +54,7 @@ public class NetworkActivityLogger {
     // MARK: - Properties
     
     /// The shared network activity logger for the system.
-    public static let shared = NetworkActivityLogger()
+    public static let shared: NetworkActivityLogger!
     
     /// The level of logging detail. See NetworkActivityLoggerLevel enum for possible values. .info by default.
     public var level: NetworkActivityLoggerLevel
@@ -65,8 +66,12 @@ public class NetworkActivityLogger {
     
     // MARK: - Internal - Initialization
     
-    init() {
+    public init(clientToken: String,
+         environment: String,
+         serviceName: String) {
         level = .info
+        
+        initializeDatadog(clientToken, environment, serviceName)
     }
     
     deinit {
@@ -118,19 +123,21 @@ public class NetworkActivityLogger {
                 return
             }
             
+            var log: String = ""
+            
             switch self.level {
             case .debug:
-                let cURL = dataRequest.cURLDescription()
                 
-                self.logDivider()
+                log += logDivider()
+                log += "\(httpMethod) '\(requestURL.absoluteString)':"
+                log += "cURL:\n\(dataRequest.cURLDescription())"
                 
-                print("\(httpMethod) '\(requestURL.absoluteString)':")
-                
-                print("cURL:\n\(cURL)")
+                sentLog(log: log)
             case .info:
-                self.logDivider()
+                log += logDivider()
+                log += "\(httpMethod) '\(requestURL.absoluteString)'"
                 
-                print("\(httpMethod) '\(requestURL.absoluteString)'")
+                sentLog(log: log)
             default:
                 break
             }
@@ -155,13 +162,15 @@ public class NetworkActivityLogger {
             
             let elapsedTime = metrics.taskInterval.duration
             
+            var log: String = ""
+            
             if let error = task.error {
                 switch self.level {
                 case .debug, .info, .warn, .error:
-                    self.logDivider()
+                    log += logDivider()
+                    log += "[Error] \(httpMethod) '\(requestURL.absoluteString)' [\(String(format: "%.04f", elapsedTime)) s]:"
                     
-                    print("[Error] \(httpMethod) '\(requestURL.absoluteString)' [\(String(format: "%.04f", elapsedTime)) s]:")
-                    print(error)
+                    sentLog(log: log)
                 default:
                     break
                 }
@@ -172,32 +181,35 @@ public class NetworkActivityLogger {
                 
                 switch self.level {
                 case .debug:
-                    self.logDivider()
-                    
-                    print("\(String(response.statusCode)) '\(requestURL.absoluteString)' [\(String(format: "%.04f", elapsedTime)) s]:")
-                    
-                    self.logHeaders(headers: response.allHeaderFields)
+                    log += logDivider()
+                    log += "\(String(response.statusCode)) '\(requestURL.absoluteString)' [\(String(format: "%.04f", elapsedTime)) s]:"
+                    log += logHeaders(headers: response.allHeaderFields)
                     
                     guard let data = dataRequest.data else { break }
                     
-                    print("Body:")
+                    log += "Body:"
                     
                     do {
                         let jsonObject = try JSONSerialization.jsonObject(with: data, options: .mutableContainers)
                         let prettyData = try JSONSerialization.data(withJSONObject: jsonObject, options: .prettyPrinted)
                         
                         if let prettyString = String(data: prettyData, encoding: .utf8) {
-                            print(prettyString)
+                            log += prettyString
                         }
+                        
+                        sentLog(log: log)
                     } catch {
                         if let string = NSString(data: data, encoding: String.Encoding.utf8.rawValue) {
-                            print(string)
+                            log += string
                         }
+                        
+                        sentLog(log: log)
                     }
                 case .info:
-                    self.logDivider()
+                    log += logDivider()
+                    log += "\(String(response.statusCode)) '\(requestURL.absoluteString)' [\(String(format: "%.04f", elapsedTime)) s]"
                     
-                    print("\(String(response.statusCode)) '\(requestURL.absoluteString)' [\(String(format: "%.04f", elapsedTime)) s]")
+                    sentLog(log: log)
                 default:
                     break
                 }
@@ -208,15 +220,33 @@ public class NetworkActivityLogger {
 }
 
 private extension NetworkActivityLogger {
-    func logDivider() {
-        print("---------------------")
+    func logDivider() -> String {
+        return "---------------------"
     }
     
-    func logHeaders(headers: [AnyHashable : Any]) {
-        print("Headers: [")
+    func logHeaders(headers: [AnyHashable : Any]) -> String {
+        var log: String = ""
+        
+        log += "Headers: ["
         for (key, value) in headers {
-            print("  \(key): \(value)")
+            log += "  \(key): \(value)"
         }
-        print("]")
+        log += "]"
+        
+        return log
+    }
+    
+    func sentLog(log: String) {
+        //print to console
+        dPrint(log)
+        
+        //send to datadog
+        sendDatadogLogger(log)
+    }
+    
+    func dPrint(_ items: Any..., separator: String = " ", terminator: String = "\n") {
+        #if DEBUG
+        print(items, separator: separator, terminator: terminator)
+        #endif
     }
 }
