@@ -12,15 +12,13 @@ import Datadog
 extension NetworkActivityLogger {
     func initializeDatadog(
         _ clientToken: String,
-        _ environment: String,
         _ serviceName: String) {
         
         if #available(iOS 11.0, *) {
             Datadog.initialize(
                 appContext: .init(),
                 configuration: Datadog.Configuration
-                    .builderUsing(clientToken: clientToken, environment: environment)
-                    .set(serviceName: serviceName)
+                    .builderUsing(clientToken: clientToken)
                     .build()
             )
             
@@ -42,8 +40,8 @@ private extension NetworkActivityLogger {
     func initializeDatadogLogger() -> Logger {
         let logger = Logger.builder
             .sendNetworkInfo(true)
-            .set(loggerName: Bundle.main.bundleIdentifier!)
-            .printLogsToConsole(true, usingFormat: .shortWith(prefix: "[iOS App] "))
+            .set(serviceName: serviceName)
+            .set(loggerName: loggerName)
             .build()
         
         for (key, value) in additionalTagForLogger {

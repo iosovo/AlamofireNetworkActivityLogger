@@ -67,20 +67,24 @@ public class NetworkActivityLogger {
     /// Additional info for logger
     var additionalAttributesForLogger: [String: String] = [:]
     var additionalTagForLogger: [String: String] = [:]
+    var serviceName: String
+    var loggerName: String
     
     // MARK: - Internal - Initialization
     
     public init(
         clientToken: String,
-        environment: String,
         serviceName: String,
+        loggerName: String,
         additionalAttributesForLogger: [String: String] = [:],
         additionalTagForLogger: [String: String] = [:]) {
         level = .info
         
+        self.serviceName = serviceName
+        self.loggerName = loggerName
         self.additionalAttributesForLogger = additionalAttributesForLogger
         self.additionalTagForLogger = additionalTagForLogger
-        initializeDatadog(clientToken, environment, serviceName)
+        initializeDatadog(clientToken)
     }
     
     deinit {
