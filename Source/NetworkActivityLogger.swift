@@ -64,7 +64,9 @@ public class NetworkActivityLogger {
     
     private let queue = DispatchQueue(label: "\(NetworkActivityLogger.self) Queue")
     
-    var additionalInfosForLogger: [String: String] = [:]
+    /// Additional info for logger
+    var additionalAttributesForLogger: [String: String] = [:]
+    var additionalTagForLogger: [String: String] = [:]
     
     // MARK: - Internal - Initialization
     
@@ -72,10 +74,12 @@ public class NetworkActivityLogger {
         clientToken: String,
         environment: String,
         serviceName: String,
-        additionalInfosForLogger: [String: String]) {
+        additionalAttributesForLogger: [String: String] = [:],
+        additionalTagForLogger: [String: String] = [:]) {
         level = .info
         
-        self.additionalInfosForLogger = additionalInfosForLogger
+        self.additionalAttributesForLogger = additionalAttributesForLogger
+        self.additionalTagForLogger = additionalTagForLogger
         initializeDatadog(clientToken, environment, serviceName)
     }
     

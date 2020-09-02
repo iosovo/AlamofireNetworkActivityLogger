@@ -34,7 +34,7 @@ extension NetworkActivityLogger {
         guard #available(iOS 11.0, *) else { return }
         
         let logger = initializeDatadogLogger()
-        logger.info(log)
+        logger.info(log, attributes: additionalAttributesForLogger)
     }
 }
 
@@ -46,7 +46,7 @@ private extension NetworkActivityLogger {
             .printLogsToConsole(true, usingFormat: .shortWith(prefix: "[iOS App] "))
             .build()
         
-        for (key, value) in additionalInfosForLogger {
+        for (key, value) in additionalTagForLogger {
             logger.addTag(withKey: key, value: value)
         }
         
