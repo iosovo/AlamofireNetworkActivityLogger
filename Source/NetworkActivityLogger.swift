@@ -74,6 +74,7 @@ public class NetworkActivityLogger {
     
     public init(
         clientToken: String,
+        environment: String,
         serviceName: String,
         loggerName: String,
         additionalAttributesForLogger: [String: String] = [:],
@@ -84,7 +85,7 @@ public class NetworkActivityLogger {
         self.loggerName = loggerName
         self.additionalAttributesForLogger = additionalAttributesForLogger
         self.additionalTagForLogger = additionalTagForLogger
-        initializeDatadog(clientToken)
+        initializeDatadog(clientToken, environment)
     }
     
     deinit {

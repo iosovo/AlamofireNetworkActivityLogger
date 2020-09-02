@@ -12,13 +12,14 @@ import Datadog
 extension NetworkActivityLogger {
     func initializeDatadog(
         _ clientToken: String,
+        _ environment: String,
         _ serviceName: String) {
         
         if #available(iOS 11.0, *) {
             Datadog.initialize(
                 appContext: .init(),
                 configuration: Datadog.Configuration
-                    .builderUsing(clientToken: clientToken)
+                    .builderUsing(clientToken: clientToken, environment: environment)
                     .build()
             )
             
